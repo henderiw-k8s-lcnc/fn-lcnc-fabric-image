@@ -1,0 +1,1 @@
+cat example/rctx.json | /usr/local/bin/docker run --rm -i --network none --user nobody --security-opt=no-new-privileges --pull missing yndd/fn-lcnc-fabric-image
