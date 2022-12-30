@@ -58,6 +58,7 @@ func (r *Fabric) Run(ctx *fn.Context, functionConfig map[string]runtime.RawExten
 		}
 	}
 
+	// create the fabric from the input
 	f, err := fabric.New(&fabric.Config{
 		Name:            r.definition.GetName(),
 		Namespace:       r.definition.GetNamespace(),
