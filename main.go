@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/henderiw-k8s-lcnc/fn-lcnc-fabric-image/pkg/ipam"
+	"github.com/henderiw-k8s-lcnc/fn-sdk/go/fn"
 	topov1alpha1 "github.com/henderiw-k8s-lcnc/topology/apis/topo/v1alpha1"
 	"github.com/henderiw/fabric/fabric"
-	"github.com/yndd/lcnc-function-sdk/go/fn"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/ipam/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -37,14 +39,14 @@ func main() {
 // `results` provides easy methods to add info, error result to `ResourceContext.Results`.
 func (r *Fabric) Run(ctx *fn.Context, functionConfig map[string]runtime.RawExtension, resources *fn.Resources, results *fn.Results) bool {
 	// parse input
-	for gvkString, gvkResources := range resources.Input {
+	for gvkString, gvkResources := range resources.Resources {
 		for _, gvkResource := range gvkResources {
 			switch gvkString {
-			case "topo.yndd.io.v1alpha1.Definition":
+			case "Definition.v1alpha1.topo.yndd.io":
 				if err := json.Unmarshal(gvkResource.Raw, r.definition); err != nil {
 					results.ErrorE(err)
 				}
-			case "topo.yndd.io.v1alpha1.Template":
+			case "Template.v1alpha1.topo.yndd.io":
 				t := &topov1alpha1.Template{}
 				if err := json.Unmarshal(gvkResource.Raw, t); err != nil {
 					results.ErrorE(err)
@@ -71,10 +73,56 @@ func (r *Fabric) Run(ctx *fn.Context, functionConfig map[string]runtime.RawExten
 	}
 
 	for _, n := range f.GetNodes() {
-		resources.AddOutput(n)
+		resources.AddResource(n, &fn.ResourceParameters{})
 	}
 	for _, l := range f.GetLinks() {
-		resources.AddOutput(l)
+		resources.AddResource(l, &fn.ResourceParameters{})
+	}
+
+	//allocate ip prefixes and ip(s) per node for mgmt purposes
+	prefixAlloc := &ipam.IpamAllocInfo{
+		Name:      r.definition.GetName(),
+		Namespace: r.definition.GetNamespace(),
+		Spec: ipamv1alpha1.IPAllocationSpec{
+			PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+			NetworkInstanceRef: &ipamv1alpha1.NetworkInstanceReference{
+				Name:      "vpc-mgmt-fabric", //should come from the definition
+				Namespace: r.definition.GetNamespace(),
+			},
+			PrefixLength:  24,
+			AddressFamily: "ipv4",
+			CreatePrefix:  true,
+			Labels: map[string]string{
+				//ipamv1alpha1.NephioRegionKey:  "us-central-1",
+				"nephio.org/region": "us-central-1",
+				ipamv1alpha1.NephioSiteKey:    "edge1",
+				ipamv1alpha1.NephioPurposeKey: "mgmt",
+			},
+		},
+	}
+	resources.AddResource(prefixAlloc.BuildIPAMIPPrefixAllocation(), &fn.ResourceParameters{Conditioned: true, Internal: true})
+	for idx, n := range f.GetNodes() {
+		ipAlloc := &ipam.IpamAllocInfo{
+			Name:      n.GetName(),
+			Namespace: r.definition.GetNamespace(),
+			Spec: ipamv1alpha1.IPAllocationSpec{
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				NetworkInstanceRef: &ipamv1alpha1.NetworkInstanceReference{
+					Name:      "vpc-mgmt-fabric", //should come from the definition
+					Namespace: r.definition.GetNamespace(),
+				},
+				AddressFamily: "ipv4",
+				Index:         uint32(idx),
+				Labels: map[string]string{
+					//ipamv1alpha1.NephioRegionKey:  "us-central-1",
+					"nephio.org/region": "us-central-1",
+					ipamv1alpha1.NephioSiteKey:    "edge1",
+					ipamv1alpha1.NephioPurposeKey: "mgmt",
+				},
+				//DependsOn:           prefixAlloc.GetName(),
+			},
+		}
+		resources.AddResource(ipAlloc.BuildIPAMIPAllocation(), &fn.ResourceParameters{Conditioned: true, Internal: true})
 	}
 
 	return true
