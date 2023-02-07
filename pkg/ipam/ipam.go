@@ -45,7 +45,7 @@ func (r *IpamAllocInfo) BuildIPAMIPPrefixAllocation() *ipamv1alpha1.IPAllocation
 
 func (r *IpamAllocInfo) GetName() string {
 	//if az, ok := r.Spec.Labels[ipamv1alpha1.NephioAvailabilityZoneKey]; ok {
-		if az, ok := r.Spec.Labels["nephio.org/availability-zone"]; ok {
+	if az, ok := r.Spec.Labels["nephio.org/availability-zone"]; ok {
 		return fmt.Sprintf("%s.%s.%s.%s.%s",
 			r.Name,
 			//r.Spec.Labels[ipamv1alpha1.NephioRegionKey],

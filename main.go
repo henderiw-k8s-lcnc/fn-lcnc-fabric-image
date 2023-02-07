@@ -94,7 +94,7 @@ func (r *Fabric) Run(ctx *fn.Context, functionConfig map[string]runtime.RawExten
 			CreatePrefix:  true,
 			Labels: map[string]string{
 				//ipamv1alpha1.NephioRegionKey:  "us-central-1",
-				"nephio.org/region": "us-central-1",
+				"nephio.org/region":           "us-central-1",
 				ipamv1alpha1.NephioSiteKey:    "edge1",
 				ipamv1alpha1.NephioPurposeKey: "mgmt",
 			},
@@ -115,7 +115,7 @@ func (r *Fabric) Run(ctx *fn.Context, functionConfig map[string]runtime.RawExten
 				Index:         uint32(idx),
 				Labels: map[string]string{
 					//ipamv1alpha1.NephioRegionKey:  "us-central-1",
-					"nephio.org/region": "us-central-1",
+					"nephio.org/region":           "us-central-1",
 					ipamv1alpha1.NephioSiteKey:    "edge1",
 					ipamv1alpha1.NephioPurposeKey: "mgmt",
 				},

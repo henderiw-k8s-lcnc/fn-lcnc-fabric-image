@@ -1,6 +1,7 @@
 VERSION ?= latest
-REGISTRY ?= yndd
-IMG ?= $(REGISTRY)/fn-lcnc-fabric-image:${VERSION}
+REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+PROJECT ?= fn-fabric
+IMG ?= $(REGISTRY)/$(PROJECT)-image:${VERSION}
 
 # Private Github REPOs
 GITHUB_TOKEN ?= $(shell cat ~/.config/github.token)
